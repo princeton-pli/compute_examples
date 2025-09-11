@@ -1,8 +1,8 @@
 # Compute Tools
 
-This repo contains some tools for visualizing cluster usage statistics.
+This repo contains some examples for running distributed training on the cluster.
     
 ## 🚀 Getting started
 
-To run the report, use:
-```./run_report.sh```
+To launch training, use:
+```./run_train.sh```
