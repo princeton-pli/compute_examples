@@ -19,7 +19,7 @@ from transformers import (
     HfArgumentParser,
 )
 
-# import modeling_gpt2
+
 import modeling_llama
 import utils
 import data_utils
