@@ -2,14 +2,14 @@
 
 PORT=$(expr $RANDOM + 1000)
 
-task=${task:-wikitext}
+task=${task:-wikitext2}
 cache_dir=${cache_dir:-/scratch/gpfs/ydong/hf_cache}
-max_seq_len=${max_seq_len:-512}
-n_embd=${n_embd:-512}
-n_head=${n_head:-16}
-max_steps=${max_steps:-3000}
+max_seq_len=${max_seq_len:-64}
+n_embd=${n_embd:-64}
+n_head=${n_head:-2}
+max_steps=${max_steps:-300}
 shaped_attention=${shaped_attention:-mixing}
-n_layer=${n_layer:-8}
+n_layer=${n_layer:-2}
 learning_rate=${learning_rate:-5e-3}
 per_device_train_batch_size=${per_device_train_batch_size:-64}
 per_device_eval_batch_size=${per_device_eval_batch_size:-64}

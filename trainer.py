@@ -63,10 +63,19 @@ def tokenize_dataset(dataset, tokenizer, args):
 
 def get_model_config(args, training_args, tokenizer):
     import functools
-    config_getter = functools.partial(
-        AutoConfig.from_pretrained,
-        model_name_or_path = args.model_name_or_path,
-    )
+    if args.model_name_or_path == "gpt2":
+        config_getter = functools.partial(
+            modeling_gpt2.MixingGPTConfig
+        )
+    elif args.model_name_or_path == "llama":
+        config_getter = functools.partial(
+            modeling_llama.MixingLlamaConfig
+        )
+    else:
+        config_getter = functools.partial(
+            AutoConfig.from_pretrained,
+            model_name_or_path = args.model_name_or_path,
+        )
     
     config = config_getter(        
         cache_dir=args.cache_dir,
@@ -80,7 +89,7 @@ def get_model_config(args, training_args, tokenizer):
         max_position_embeddings=args.max_seq_len,
         # attention_width = args.n_embd // args.n_head,
         skip_scaling = args.skip_scaling,
-        attn_implementation = attn_implementation,
+        # attn_implementation = attn_implementation,
         activation_cminus = args.activation_cminus,
         # Initialize weights from N(0, 1). Width-dependent scaling
         # is implemented in both llama and gpt2 module initializers.
@@ -97,7 +106,6 @@ def get_model_config(args, training_args, tokenizer):
         base_num_attention_heads=args.base_num_attention_heads,
         tau0=1.,
         depth_alpha=args.depth_alpha,
-        **kwargs,
     )
     
     # config.shaped_attention = training_args.shaped_attention
@@ -114,7 +122,6 @@ class EvalCallback(transformers.trainer_callback.TrainerCallback):
     def on_evaluate(self, args, state, control, metrics=None, **kwargs):
         # metrics = self.trainer.evaluate()
         # breakpoint()
-        _add_model_perplexity(metrics)
         logger.warning(metrics)
         # print(metrics)
 
@@ -165,16 +172,6 @@ def main():
     transformers.set_seed(training_args.seed)
     # Cache mapped datasets.
     # datasets.set_caching_enabled()
-    """
-    # Tokenizer only used for natural language tasks.
-    tokenizer = AutoTokenizer.from_pretrained(
-        args.tokenizer_name or args.model_name_or_path,
-        cache_dir=args.cache_dir,
-        use_fast=args.use_fast_tokenizer,
-        revision=args.model_revision,
-        use_auth_token=True if args.use_auth_token else None,
-    )
-    """
 
     is_streaming = args.task in ["dclm"]
     if is_streaming:
@@ -199,8 +196,6 @@ def main():
 
     )
     tokenizer.pad_token = tokenizer.eos_token
-    
-    register_models(args.model_name_or_path)
     
     config = get_model_config(args, training_args, tokenizer)
 
@@ -241,7 +236,7 @@ def main():
     train_dataset = tokenize_dataset(train_dataset, tokenizer, args)
     eval_dataset = tokenize_dataset(eval_dataset, tokenizer, args)
 
-    trainer_class = TASK_TO_TRAINER[args.task]
+    trainer_class = transformers.Trainer
     training_args.eval_strategy = "steps"
     training_args.lr_scheduler_type = "linear" # "cosine"
     training_args.remove_unused_columns = False
@@ -267,7 +262,6 @@ def main():
         
     trainer.train()
     metrics = trainer.evaluate()
-    _add_model_perplexity(metrics)
     trainer.log_metrics("eval", metrics)
     trainer.save_metrics("eval", metrics)
     trainer.save_state()
